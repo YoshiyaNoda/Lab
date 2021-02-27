@@ -1,0 +1,33 @@
+plot ファイル名 title '凡例につけたい名前' , ファイル名 ... でlegendの名前変更
+unset key でlegendの削除
+set key at x,y でlegendの位置を指定
+set key right とかもあるっぽい
+set xlabel 'ラベル名' でラベルを指定できる yも同様
+
+gnuplot> plot "file" with lp lt 3 lw 2 pt 5 ps 2 でいろいろ指定できる with lp は一塊
+lpはline and points で線も同時に描画する。 lt は line type で線の種類。 lw はline weight . point type で点の種類を指定できる。
+ptは6~13あたりを使い分ければ結構だと思う
+psは point size
+
+plot "approximate.txt" title '近似値' pt 7 , "theoretical.txt" title '理論値' pt 9
+
+ ↑こんな感じでオッケーじゃね
+
+ # ラベルの位置
+set xlabel offset 0,0
+set ylabel offset 0,0
+#Y軸の余白
+set lmargin 10
+#X軸の余白
+set bmargin 4
+
+## 軸の数字のフォント
+set tics font "Arial,10"
+
+## ラベルのフォント
+set xlabel font "Arial,13"
+set ylabel font "Arial,13"
+
+## プロットのサイズ変更
+plot hoge psでもいけるとは思う
+set pointsize 0.5
