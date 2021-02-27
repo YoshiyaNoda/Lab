@@ -1,4 +1,5 @@
 #include <iostream>
+#include <cassert>
 
 // 定数
 constexpr double m = 0.7;
