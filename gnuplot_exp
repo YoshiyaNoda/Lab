@@ -31,3 +31,8 @@ set ylabel font "Arial,13"
 ## プロットのサイズ変更
 plot hoge psでもいけるとは思う
 set pointsize 0.5
+
+## 画像保存
+GUIでやればいい
+set terminal png
+とかでpngにできたりepsにできたりする
