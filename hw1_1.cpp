@@ -1,5 +1,5 @@
 #include <iostream>
-#include<fstream>
+#include <fstream>
 
 // 定数
 constexpr double m = 0.7;
@@ -19,13 +19,15 @@ double nextT(double t) {
 }
 
 int main() {
-    ofstream outputfile("resule.txt");
+    std::ofstream outputfile("result.txt");
     double v = v0;
     double t = t0;
     for(int i = 0; i < 20; i++) {
         std::cout << v << " " << t << std::endl;
+        outputfile << t << "\t" << v << "\n";
         v = nextV(v);
         t = nextT(t);
     }
+    outputfile.close();
     return 0;
 }
