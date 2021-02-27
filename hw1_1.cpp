@@ -1,25 +1,24 @@
 #include <iostream>
-using namespace std;
 
 // 定数
-const float m = 0.7;
-const float k = 0.2;
-const float g = 9.81;
-const float dt = 0.1;
+constexpr double m = 0.7;
+constexpr double k = 0.2;
+constexpr double g = 9.81;
+constexpr double dt = 0.1;
 
 // 初期条件
-const float t0 = 0;
-const float v0 = 0;
+constexpr double t0 = 0;
+constexpr double v0 = 0;
 
-float nextV(float v) {
+double nextV(double v) {
     return (g - k/m * v) * dt + v;
 }
 
 int main() {
-    float v = v0;
+    double v = v0;
     for(int i = 0; i < 20; i++) {
         v = nextV(v);
-        cout << v << endl;
+        std::cout << v << std::endl;
     }
     return 0;
 }
