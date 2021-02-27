@@ -1,33 +1,41 @@
 #include <iostream>
 #include <fstream>
+#include <cmath>
 
 // 定数
 constexpr double m = 0.7;
 constexpr double k = 0.2;
 constexpr double g = 9.81;
 constexpr double dt = 0.1;
+constexpr double N = 200; // ループ回数
 
 // 初期条件
 constexpr double t0 = 0;
 constexpr double v0 = 0;
 
-double nextV(double v) {
+double nextApproximateV(double v) {
     return (g - k/m * v) * dt + v;
 }
-double nextT(double t) {
+double nextApproximateT(double t) {
     return t + dt;
+}
+double culcTheoreticalValue(double t) {
+    return v0 + m * g / k *(1 - std::exp(-k / m * t));
 }
 
 int main() {
-    std::ofstream outputfile("result.txt");
+    std::ofstream outputfile("approximate.txt");
+    std::ofstream tOutputfile("theoretical.txt");
     double v = v0;
     double t = t0;
-    for(int i = 0; i < 20; i++) {
+    for(int i = 0; i < N; i++) {
         std::cout << v << " " << t << std::endl;
         outputfile << t << "\t" << v << "\n";
-        v = nextV(v);
-        t = nextT(t);
+        tOutputfile << t << "\t" << culcTheoreticalValue(v) << "\n";
+        v = nextApproximateV(v);
+        t = nextApproximateT(t);
     }
     outputfile.close();
+    tOutputfile.close();
     return 0;
 }
