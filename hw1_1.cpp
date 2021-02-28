@@ -26,16 +26,18 @@ double culcTheoreticalValue(double t) {
 int main() {
     std::ofstream outputfile("approximate.txt");
     std::ofstream tOutputfile("theoretical.txt");
+    std::ofstream eOutputfile("error.txt");
     double v = v0;
     double t = t0;
     for(int i = 0; i < N; i++) {
-        std::cout << v << " " << t << std::endl;
         outputfile << t << "\t" << v << "\n";
         tOutputfile << t << "\t" << culcTheoreticalValue(v) << "\n";
+        eOutputfile << t << "\t" << (culcTheoreticalValue(v) - v) << "\n";
         v = nextApproximateV(v);
         t = nextApproximateT(t);
     }
     outputfile.close();
     tOutputfile.close();
+    eOutputfile.close();
     return 0;
 }

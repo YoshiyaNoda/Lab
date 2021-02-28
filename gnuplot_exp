@@ -36,3 +36,12 @@ set pointsize 0.5
 GUIでやればいい
 set terminal png
 とかでpngにできたりepsにできたりする
+
+## 軸の書式を指数に
+set logscale
+set nologscale
+
+set logscale x でx軸だけ指数にできるっぽい
+
+## グリッドを複目盛に追加
+set grid xtics mxtics
