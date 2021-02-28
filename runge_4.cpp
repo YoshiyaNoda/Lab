@@ -14,7 +14,14 @@ constexpr double t0 = 0;
 constexpr double v0 = 0;
 
 double nextApproximateV(double v) {
-    return (g - k/m * v) * dt + v;
+    double result;
+    {
+        double v1 = v + dt / 2 * (g - k / m * v);
+        double v2 = v + dt / 2 * (g - k / m * v1);
+        double v3 = v + dt * (g - k / m * v2);
+        result = v + dt / 6 * ((g - k / m * v) + 2 * (g - k / m * v1) + 2 * (g - k / m * v2) + (g - k / m * v3));
+    }
+    return result;
 }
 double nextApproximateT(double t) {
     return t + dt;
@@ -26,7 +33,7 @@ double culcTheoreticalValue(double t) {
 int main() {
     std::ofstream outputfile("approximate.txt");
     std::ofstream tOutputfile("theoretical.txt");
-    std::ofstream eOutputfile("error.txt");
+    std::ofstream eOutputfile("runge_4_error.txt");
     double v = v0;
     double t = t0;
     for(int i = 0; i < N; i++) {

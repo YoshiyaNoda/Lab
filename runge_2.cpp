@@ -31,8 +31,8 @@ int main() {
     double t = t0;
     for(int i = 0; i < N; i++) {
         outputfile << t << "\t" << v << "\n";
-        tOutputfile << t << "\t" << culcTheoreticalValue(v) << "\n";
-        eOutputfile << t << "\t" << (culcTheoreticalValue(v) - v) << "\n";
+        tOutputfile << t << "\t" << culcTheoreticalValue(t) << "\n";
+        eOutputfile << t << "\t" << (culcTheoreticalValue(t) - v) << "\n";
         v = nextApproximateV(v);
         t = nextApproximateT(t);
     }
