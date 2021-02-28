@@ -39,9 +39,11 @@ set terminal png
 
 ## 軸の書式を指数に
 set logscale
-set nologscale
+unset logscale
 
 set logscale x でx軸だけ指数にできるっぽい
+
+set format x "10^{%T}" で ザックリ指数表示できる
 
 ## グリッドを複目盛に追加
 set grid xtics mxtics
