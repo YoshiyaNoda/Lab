@@ -7,7 +7,7 @@ constexpr double m = 0.7;
 constexpr double k = 0.2;
 constexpr double g = 9.81;
 constexpr double dt = 0.0001;
-constexpr double N = 20000; // ループ回数
+constexpr double N = 30001; // ループ回数
 
 // 初期条件
 constexpr double t0 = 0;
@@ -40,6 +40,9 @@ int main() {
         outputfile << t << "\t" << v << "\n";
         tOutputfile << t << "\t" << culcTheoreticalValue(t) << "\n";
         eOutputfile << t << "\t" << (culcTheoreticalValue(t) - v) << "\n";
+        if(i == 30000) {
+            std::cout << "t = 3.0 s\n" << culcTheoreticalValue(t) - v << std::endl;
+        }
         v = nextApproximateV(v);
         t = nextApproximateT(t);
     }
