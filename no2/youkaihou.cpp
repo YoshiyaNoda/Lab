@@ -2,6 +2,8 @@
 #include <fstream>
 #include <cmath>
 #define GNUPLOT_PATH "gnuplot"
+#include <unistd.h>
+
 
 // 定数
 constexpr double m = 1.0;
@@ -41,10 +43,17 @@ void gnuplot() {
 		fprintf(stderr, "ファイルが見つかりません %s.", GNUPLOT_PATH);
 		exit(EXIT_FAILURE);
 	}
-
-    fprintf(gp, "plot 'potential.txt' title 'potential' pt 7, 'kinetic.txt' title 'kinetic' pt 9, 'total_energy.txt' title 'total' pt 11\n");
+    fprintf(gp, "set xlabel \"time [s]\"\n");
+    fprintf(gp, "set ylabel \"energy [J]\"\n");
+    fprintf(gp, "set lmargin 10\n");
+    fprintf(gp, "set bmargin 4\n");
+    fprintf(gp, "set xlabel font 'Arial,13'\n");
+    fprintf(gp, "set ylabel font 'Arial,13'\n");
+    fprintf(gp, "set pointsize 0.5\n");
+    // fileの読み込みが最後じゃないとうまくいかなかったのなんでだろう。結構重めのIOなので、それが間接的な原因になってる気がする。コルーチン化したら直る気がするけどめんどいのでこれでいいや。
+    fprintf(gp, "plot \"potential.txt\" title \"potential\" pt 7, \"kinetic.txt\" title \"kinetic\" pt 9, \"total_energy.txt\" title \"total\" pt 11\n");
+    fflush(gp);
 	
-	fflush(gp);
     std::string dummy;
     std::cout << "Enter to continue..." << std::endl;
     std::getline(std::cin, dummy);
@@ -76,7 +85,6 @@ int main() {
     for(int i = 0; i < N; i++) {
         const double U = culcU(x_a, x_b, x_c);
         const double K = culcK(v_a, v_b, v_c);
-        std::cout << t << "\t" << x_a << std::endl; 
         potential << t << "\t" << U << "\n";
         kinetic << t << "\t" << K << "\n";
         total << t << "\t" << K + U << "\n";
