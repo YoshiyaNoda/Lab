@@ -39,11 +39,15 @@ double nextHalfX(double v, double x) {
 double nextHalfV(double v, double x_a, double x_b, double x_c, std::function<double(double, double, double)> f) {
     return v + (dt / 2) * f(x_a, x_b, x_c);
 }
-double nextV(double v, double x_a, double x_b, double x_c, std::function<double(double, double, double)> f) {
-    return v + dt * f(x_a, x_b, x_c);
+double nextV(double v, double v_a, double v_b, double v_c, double x_a, double x_b, double x_c, std::function<double(double, double, double)> f) {
+    const double half_x_a = nextHalfX(v_a, x_a);
+    const double half_x_b = nextHalfX(v_b, x_b);
+    const double half_x_c = nextHalfX(v_c, x_c);
+    return v + dt * f(half_x_a, half_x_b, half_x_c);
 }
-double nextX(double x, double v) {
-    return x + v * dt;
+double nextX(double v, double x, double x_a, double x_b, double x_c, std::function<double(double, double, double)> f) {
+    const half_v = nextHalfV(v, x_a, x_b, x_c, f);
+    return x + half_v * dt;
 }
 
 void gnuplot() {
@@ -88,12 +92,6 @@ int main() {
     double x_a = x_a0;
     double x_b = x_b0;
     double x_c = x_c0;
-    double half_v_a;
-    double half_v_b;
-    double half_v_c;
-    double half_x_a;
-    double half_x_b;
-    double half_x_c;
     double t = t_min;
 
     int N = (t_max - t_min) / dt + 1; // iもintなので同じ型にしておく
@@ -106,18 +104,12 @@ int main() {
 
         // 値の更新
         t += dt;
-        half_x_a = nextHalfX(v_a, x_a);
-        half_x_b = nextHalfX(v_b, x_b);
-        half_x_c = nextHalfX(v_c, x_c);
-        half_v_a = nextHalfV(v_a, x_a, x_b, x_c, f_A);
-        half_v_b = nextHalfV(v_b, x_a, x_b, x_c, f_B);
-        half_v_c = nextHalfV(v_c, x_a, x_b, x_c, f_C);
-        x_a = nextX(x_a, half_v_a);
-        x_b = nextX(x_b, half_v_b);
-        x_c = nextX(x_c, half_v_c);
-        v_a = nextV(v_a, half_x_a, half_x_b, half_x_c, f_A);
-        v_b = nextV(v_b, half_x_a, half_x_b, half_x_c, f_B);
-        v_c = nextV(v_c, half_x_a, half_x_b, half_x_c, f_C);
+        x_a = nextX(v_a, x_a, x_a, x_b, x_c, f_A);
+        x_b = nextX(v_b, x_a, x_a, x_b, x_c, f_B);
+        x_c = nextX(v_c, x_a, x_a, x_b, x_c, f_C);
+        v_a = nextV(v_a, v_a, v_b, v_c, x_a, x_a, x_b, x_c, f_A);
+        v_b = nextV(v_b, v_a, v_b, v_c, x_a, x_a, x_b, x_c, f_B);
+        v_c = nextV(v_c, v_a, v_b, v_c, x_a, x_a, x_b, x_c, f_C);
     }
     potential.close();
     kinetic.close();
