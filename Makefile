@@ -1,7 +1,7 @@
-OUT = myProgram.out
-T = hoge.cpp
-compile: ${T}
-	g++ ./${T} -o $(OUT) -std=c++11
+OUT = ./test/myProgram.out
+t = hoge.cpp
+comp: ${t}
+	g++ ./${t} -o $(OUT) -std=c++11
 
-test: $(OUT)
-	./$(OUT)
+run: $(OUT)
+	$(OUT)

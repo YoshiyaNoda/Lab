@@ -51,7 +51,7 @@ void gnuplot() {
     fprintf(gp, "set ylabel font 'Arial,13'\n");
     fprintf(gp, "set pointsize 0.5\n");
     // fileの読み込みが最後じゃないとうまくいかなかったのなんでだろう。結構重めのIOなので、それが間接的な原因になってる気がする。コルーチン化したら直る気がするけどめんどいのでこれでいいや。
-    fprintf(gp, "plot \"potential.txt\" title \"potential\" pt 7, \"kinetic.txt\" title \"kinetic\" pt 9, \"total_energy.txt\" title \"total\" pt 11\n");
+    fprintf(gp, "plot \"./test/potential.txt\" title \"potential\" pt 7, \"./test/kinetic.txt\" title \"kinetic\" pt 9, \"./test/total_energy.txt\" title \"total\" pt 11\n");
     fflush(gp);
 	
     std::string dummy;
@@ -69,9 +69,9 @@ double culcK(double v_a, double v_b, double v_c) {
 }
 
 int main() {
-    std::ofstream potential("potential.txt");
-    std::ofstream kinetic("kinetic.txt");
-    std::ofstream total("total_energy.txt");
+    std::ofstream potential("test/potential.txt");
+    std::ofstream kinetic("test/kinetic.txt");
+    std::ofstream total("test/total_energy.txt");
 
     double v_a = v_a0;
     double v_b = v_b0;
