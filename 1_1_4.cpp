@@ -6,6 +6,7 @@
 constexpr double m = 0.7;
 constexpr double k = 0.2;
 constexpr double g = 9.81;
+constexpr double M = 30001;
 
 // 初期条件
 constexpr double t0 = 0;
@@ -92,7 +93,7 @@ void runge4(double dt, int N) {
 }
 
 int main() {
-    for(int i = 500; i < 10001; i++) {
+    for(int i = M; i > 0; i--) {
         // 切り捨てられないように
         double div = i;
         double dt = 3 / div;
