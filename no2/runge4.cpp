@@ -62,10 +62,10 @@ std::vector<double> vectorsSum(std::vector<std::vector<double>> vectors) {
     }
     return res;
 }
-std::vector<double> devideBy6(std::vector<double> v) {
+std::vector<double> vectorProduct(std::vector<double> v, double num) {
     std::vector<double> res = v;
     for(int i = 0; i < res.size(); i++) {
-        res[i] = res[i] / 6;
+        res[i] = res[i] * num;
     }
     return res;
 }
@@ -81,11 +81,14 @@ std::vector<std::vector<double>> update(std::vector<std::vector<double>> d) {
 
     const std::vector<double> vs_temp_3 = tempVs(vs_before, vs_temp_2, xs_temp_2, dt);
     const std::vector<double> xs_temp_3 = tempXs(xs_before, vs_temp_2, xs_temp_2, dt);
+    
+    const std::vector<double> vs_temp_4 = tempVs(vs_before, vs_temp_3, xs_temp_3, dt);
+    const std::vector<double> xs_temp_4 = tempXs(xs_before, vs_temp_3, xs_temp_3, dt);
 
-    // const std::vector<double> afterVs = devideBy6(vectorsSum({tempVs(vs_before, xs_before, dt), tempVs(vs_temp_1, xs_temp_1, 2 * dt), tempVs(vs_temp_2, xs_temp_2, 2 * dt), tempVs(vs_temp_3, xs_temp_3, dt)}));
-    // const std::vector<double> afterXs = devideBy6(vectorsSum({tempXs(vs_before, xs_before, dt), tempXs(vs_temp_1, xs_temp_1, 2 * dt), tempXs(vs_temp_2, xs_temp_2, 2 * dt), tempXs(vs_temp_3, xs_temp_3, dt)}));
-    // return {afterVs, afterXs};
-    return {vs_temp_1, xs_temp_1};
+    constexpr double num = 1.0 / 6.0;
+    const std::vector<double> afterVs = vectorProduct(vectorsSum({vectorProduct(vs_before, -3.0), vectorProduct(vs_temp_1, 2.0), vectorProduct(vs_temp_2, 4.0), vectorProduct(vs_temp_3, 2.0), vectorProduct(vs_temp_4, 1.0)}), num);
+    const std::vector<double> afterXs = vectorProduct(vectorsSum({vectorProduct(xs_before, -3.0), vectorProduct(xs_temp_1, 2.0), vectorProduct(xs_temp_2, 4.0), vectorProduct(xs_temp_3, 2.0), vectorProduct(xs_temp_4, 1.0)}), num);
+    return {afterVs, afterXs};
 }
 double culcU(std::vector<double> xs) {
     const double x_a = xs[0];
@@ -113,6 +116,7 @@ void gnuplot() {
     fprintf(gp, "set xlabel font 'Arial,13'\n");
     fprintf(gp, "set ylabel font 'Arial,13'\n");
     fprintf(gp, "set pointsize 0.5\n");
+    fprintf(gp, "set yrange [0:0.6]\n"); // 他の二つと合わせる
     // fileの読み込みが最後じゃないとうまくいかなかったのなんでだろう。比較的重めのIOなので、それが間接的な原因になってる気がする。コルーチン化したら直る気がするけどめんどいのでこれでいいや。
     fprintf(gp, "plot \"./test/potential.txt\" title \"potential\" pt 7, \"./test/kinetic.txt\" title \"kinetic\" pt 9, \"./test/total_energy.txt\" title \"total\" pt 11\n");
     fflush(gp);
