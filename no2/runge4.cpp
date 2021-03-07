@@ -34,16 +34,18 @@ auto f_C = [](std::vector<double> xs) -> double {
     return k / m * (xs[1] + L * w - 2 * xs[2]);
 };
 double tempX(double v, double x, double stride) {
+    // xは常にi番目のxであり、一時的なものではない
     return x + stride * v;
 }
 double tempV(double v, double stride, std::vector<double> xs, std::function<double(std::vector<double>)> f) {
+    // vは常にi番目のxであり、一時的なものではない
     return v + stride * f(xs);
 }
-std::vector<double> tempXs(std::vector<double> vs, std::vector<double> xs, double stride) {
-    return {tempX(vs[0], xs[0], stride), tempX(vs[1], xs[1], stride), tempX(vs[2], xs[2], stride)};
+std::vector<double> tempXs(std::vector<double> xs_before, std::vector<double> vs, std::vector<double> xs, double stride) {
+    return {tempX(vs[0], xs_before[0], stride), tempX(vs[1], xs_before[1], stride), tempX(vs[2], xs_before[2], stride)};
 }
-std::vector<double> tempVs(std::vector<double> vs, std::vector<double> xs, double stride) {
-    return {tempV(vs[0], stride, xs, f_A), tempV(vs[1], stride, xs, f_B), tempV(vs[2], stride, xs, f_C)};
+std::vector<double> tempVs(std::vector<double> vs_before, std::vector<double> vs, std::vector<double> xs, double stride) {
+    return {tempV(vs_before[0], stride, xs, f_A), tempV(vs_before[1], stride, xs, f_B), tempV(vs_before[2], stride, xs, f_C)};
 }
 std::vector<double> vectorSum(std::vector<double> a, std::vector<double> b) {
     //とりあえずめんどくさいので長さは同じ前提
@@ -71,18 +73,19 @@ std::vector<std::vector<double>> update(std::vector<std::vector<double>> d) {
     const std::vector<double> vs_before = d[0];
     const std::vector<double> xs_before = d[1];
 
-    const std::vector<double> vs_temp_1 = tempVs(vs_before, xs_before, dt / 2);
-    const std::vector<double> xs_temp_1 = tempXs(vs_before, xs_before, dt / 2);
+    const std::vector<double> vs_temp_1 = tempVs(vs_before, vs_before, xs_before, dt / 2);
+    const std::vector<double> xs_temp_1 = tempXs(xs_before, vs_before, xs_before, dt / 2);
 
-    const std::vector<double> vs_temp_2 = tempVs(vs_temp_1, xs_temp_1, dt / 2);
-    const std::vector<double> xs_temp_2 = tempXs(vs_temp_1, xs_temp_1, dt / 2);
+    const std::vector<double> vs_temp_2 = tempVs(vs_before, vs_temp_1, xs_temp_1, dt / 2);
+    const std::vector<double> xs_temp_2 = tempXs(xs_before, vs_temp_1, xs_temp_1, dt / 2);
 
-    const std::vector<double> vs_temp_3 = tempVs(vs_temp_2, xs_temp_2, dt);
-    const std::vector<double> xs_temp_3 = tempXs(vs_temp_2, xs_temp_2, dt);
+    const std::vector<double> vs_temp_3 = tempVs(vs_before, vs_temp_2, xs_temp_2, dt);
+    const std::vector<double> xs_temp_3 = tempXs(xs_before, vs_temp_2, xs_temp_2, dt);
 
-    const std::vector<double> afterVs = devideBy6(vectorsSum({tempVs(vs_before, xs_before, dt), tempVs(vs_temp_1, xs_temp_1, 2 * dt), tempVs(vs_temp_2, xs_temp_2, 2 * dt), tempVs(vs_temp_3, xs_temp_3, dt)}));
-    const std::vector<double> afterXs = devideBy6(vectorsSum({tempXs(vs_before, xs_before, dt), tempXs(vs_temp_1, xs_temp_1, 2 * dt), tempXs(vs_temp_2, xs_temp_2, 2 * dt), tempXs(vs_temp_3, xs_temp_3, dt)}));
-    return {afterVs, afterXs};
+    // const std::vector<double> afterVs = devideBy6(vectorsSum({tempVs(vs_before, xs_before, dt), tempVs(vs_temp_1, xs_temp_1, 2 * dt), tempVs(vs_temp_2, xs_temp_2, 2 * dt), tempVs(vs_temp_3, xs_temp_3, dt)}));
+    // const std::vector<double> afterXs = devideBy6(vectorsSum({tempXs(vs_before, xs_before, dt), tempXs(vs_temp_1, xs_temp_1, 2 * dt), tempXs(vs_temp_2, xs_temp_2, 2 * dt), tempXs(vs_temp_3, xs_temp_3, dt)}));
+    // return {afterVs, afterXs};
+    return {vs_temp_1, xs_temp_1};
 }
 double culcU(std::vector<double> xs) {
     const double x_a = xs[0];
