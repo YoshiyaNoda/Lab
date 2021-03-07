@@ -2,7 +2,8 @@
 #include <fstream>
 #include <cmath>
 #define GNUPLOT_PATH "gnuplot"
-#include <unistd.h>
+#include <vector>
+#include <typeinfo>
 
 
 // 定数
@@ -24,29 +25,27 @@ constexpr double dt = 0.01;
 constexpr double t_min = 0;
 constexpr double t_max = 100;
 
-auto f_A = [](double arg_x_a, double arg_x_b, double arg_x_c) -> double {
-    return k / m * (arg_x_b - 2 * arg_x_a);
+auto f_A = [](std::vector<double> xs) -> double {
+    return k / m * (xs[1] - 2 * xs[0]);
 };
-auto f_B = [](double arg_x_a, double arg_x_b, double arg_x_c) -> double {
-    return k / m * (arg_x_a + arg_x_c - 2 * arg_x_b);
+auto f_B = [](std::vector<double> xs) -> double {
+    return k / m * (xs[0] + xs[2] - 2 * xs[1]);
 };
-auto f_C = [](double arg_x_a, double arg_x_b, double arg_x_c) -> double {
-    return k / m * (arg_x_b + L * w - 2 * arg_x_c);
+auto f_C = [](std::vector<double> xs) -> double {
+    return k / m * (xs[1] + L * w - 2 * xs[2]);
 };
 double nextHalfX(double v, double x) {
     return x + (dt / 2) * v;
 }
-double nextHalfV(double v, double x_a, double x_b, double x_c, std::function<double(double, double, double)> f) {
-    return v + (dt / 2) * f(x_a, x_b, x_c);
+double nextHalfV(double v, std::vector<double> xs, std::function<double(std::vector<double>)> f) {
+    return v + (dt / 2) * f(xs);
 }
-double nextV(double v, double v_a, double v_b, double v_c, double x_a, double x_b, double x_c, std::function<double(double, double, double)> f) {
-    const double half_x_a = nextHalfX(v_a, x_a);
-    const double half_x_b = nextHalfX(v_b, x_b);
-    const double half_x_c = nextHalfX(v_c, x_c);
-    return v + dt * f(half_x_a, half_x_b, half_x_c);
+double nextV(double v, std::vector<double> vs, std::vector<double> xs, std::function<double(std::vector<double>)> f) {
+    const std::vector<double> half_xs = {nextHalfX(vs[0], xs[0]), nextHalfX(vs[1], xs[1]), nextHalfX(vs[2], xs[2])};
+    return v + dt * f(half_xs);
 }
-double nextX(double v, double x, double x_a, double x_b, double x_c, std::function<double(double, double, double)> f) {
-    const half_v = nextHalfV(v, x_a, x_b, x_c, f);
+double nextX(double v, double x, std::vector<double> xs, std::function<double(std::vector<double>)> f) {
+    const double half_v = nextHalfV(v, xs, f);
     return x + half_v * dt;
 }
 
@@ -104,12 +103,14 @@ int main() {
 
         // 値の更新
         t += dt;
-        x_a = nextX(v_a, x_a, x_a, x_b, x_c, f_A);
-        x_b = nextX(v_b, x_a, x_a, x_b, x_c, f_B);
-        x_c = nextX(v_c, x_a, x_a, x_b, x_c, f_C);
-        v_a = nextV(v_a, v_a, v_b, v_c, x_a, x_a, x_b, x_c, f_A);
-        v_b = nextV(v_b, v_a, v_b, v_c, x_a, x_a, x_b, x_c, f_B);
-        v_c = nextV(v_c, v_a, v_b, v_c, x_a, x_a, x_b, x_c, f_C);
+        const std::vector<double> xs = {x_a, x_b, x_c};
+        const std::vector<double> vs = {v_a, v_b, v_c};
+        x_a = nextX(v_a, x_a, xs, f_A);
+        x_b = nextX(v_b, x_b, xs, f_B);
+        x_c = nextX(v_c, x_c, xs, f_C);
+        v_a = nextV(v_a, vs, xs, f_A);
+        v_b = nextV(v_b, vs, xs, f_B);
+        v_c = nextV(v_c, vs, xs, f_C);
     }
     potential.close();
     kinetic.close();
