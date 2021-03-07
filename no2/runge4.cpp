@@ -33,19 +33,68 @@ auto f_B = [](std::vector<double> xs) -> double {
 auto f_C = [](std::vector<double> xs) -> double {
     return k / m * (xs[1] + L * w - 2 * xs[2]);
 };
-double nextHalfX(double v, double x) {
-    return x + (dt / 2) * v;
+double tempX(double v, double x, double stride) {
+    return x + stride * v;
 }
-double nextHalfV(double v, std::vector<double> xs, std::function<double(std::vector<double>)> f) {
-    return v + (dt / 2) * f(xs);
+double tempV(double v, double stride, std::vector<double> xs, std::function<double(std::vector<double>)> f) {
+    return v + stride * f(xs);
 }
-double nextV(double v, std::vector<double> vs, std::vector<double> xs, std::function<double(std::vector<double>)> f) {
-    const std::vector<double> half_xs = {nextHalfX(vs[0], xs[0]), nextHalfX(vs[1], xs[1]), nextHalfX(vs[2], xs[2])};
-    return v + dt * f(half_xs);
+std::vector<double> tempXs(std::vector<double> vs, std::vector<double> xs, double stride) {
+    return {tempX(vs[0], xs[0], stride), tempX(vs[1], xs[1], stride), tempX(vs[2], xs[2], stride)};
 }
-double nextX(double v, double x, std::vector<double> xs, std::function<double(std::vector<double>)> f) {
-    const double half_v = nextHalfV(v, xs, f);
-    return x + half_v * dt;
+std::vector<double> tempVs(std::vector<double> vs, std::vector<double> xs, double stride) {
+    return {tempV(vs[0], stride, xs, f_A), tempV(vs[1], stride, xs, f_B), tempV(vs[2], stride, xs, f_C)};
+}
+std::vector<double> vectorSum(std::vector<double> a, std::vector<double> b) {
+    //とりあえずめんどくさいので長さは同じ前提
+    std::vector<double> res = a;
+    for(int i = 0; i < a.size(); i++) {
+        res[i] += b[i];
+    }
+    return res;
+}
+std::vector<double> vectorsSum(std::vector<std::vector<double>> vectors) {
+    std::vector<double> res(vectors[0].size());
+    for(int i = 0; i < vectors.size(); i++) {
+        res = vectorSum(res, vectors[i]);
+    }
+    return res;
+}
+std::vector<double> devideBy6(std::vector<double> v) {
+    std::vector<double> res = v;
+    for(int i = 0; i < res.size(); i++) {
+        res[i] = res[i] / 6;
+    }
+    return res;
+}
+std::vector<std::vector<double>> update(std::vector<std::vector<double>> d) {
+    const std::vector<double> vs_before = d[0];
+    const std::vector<double> xs_before = d[1];
+
+    const std::vector<double> vs_temp_1 = tempVs(vs_before, xs_before, dt / 2);
+    const std::vector<double> xs_temp_1 = tempXs(vs_before, xs_before, dt / 2);
+
+    const std::vector<double> vs_temp_2 = tempVs(vs_temp_1, xs_temp_1, dt / 2);
+    const std::vector<double> xs_temp_2 = tempXs(vs_temp_1, xs_temp_1, dt / 2);
+
+    const std::vector<double> vs_temp_3 = tempVs(vs_temp_2, xs_temp_2, dt);
+    const std::vector<double> xs_temp_3 = tempXs(vs_temp_2, xs_temp_2, dt);
+
+    const std::vector<double> afterVs = devideBy6(vectorsSum({tempVs(vs_before, xs_before, dt), tempVs(vs_temp_1, xs_temp_1, 2 * dt), tempVs(vs_temp_2, xs_temp_2, 2 * dt), tempVs(vs_temp_3, xs_temp_3, dt)}));
+    const std::vector<double> afterXs = devideBy6(vectorsSum({tempXs(vs_before, xs_before, dt), tempXs(vs_temp_1, xs_temp_1, 2 * dt), tempXs(vs_temp_2, xs_temp_2, 2 * dt), tempXs(vs_temp_3, xs_temp_3, dt)}));
+    return {afterVs, afterXs};
+}
+double culcU(std::vector<double> xs) {
+    const double x_a = xs[0];
+    const double x_b = xs[1];
+    const double x_c = xs[2];
+    return 0.5 * k * ((x_a - L) * (x_a - L)) + 0.5 * k * ((x_b - x_a - L) * (x_b - x_a - L)) + 0.5 * k * ((x_c - x_b - L) * (x_c - x_b - L)) + 0.5 * k * ((x_c - L * (w - 1)) * (x_c - L * (w - 1)));
+}
+double culcK(std::vector<double> vs) {
+    const double v_a = vs[0];
+    const double v_b = vs[1];
+    const double v_c = vs[2];
+    return 0.5 * m * (v_a * v_a + v_b * v_b + v_c * v_c);
 }
 
 void gnuplot() {
@@ -61,7 +110,7 @@ void gnuplot() {
     fprintf(gp, "set xlabel font 'Arial,13'\n");
     fprintf(gp, "set ylabel font 'Arial,13'\n");
     fprintf(gp, "set pointsize 0.5\n");
-    // fileの読み込みが最後じゃないとうまくいかなかったのなんでだろう。結構重めのIOなので、それが間接的な原因になってる気がする。コルーチン化したら直る気がするけどめんどいのでこれでいいや。
+    // fileの読み込みが最後じゃないとうまくいかなかったのなんでだろう。比較的重めのIOなので、それが間接的な原因になってる気がする。コルーチン化したら直る気がするけどめんどいのでこれでいいや。
     fprintf(gp, "plot \"./test/potential.txt\" title \"potential\" pt 7, \"./test/kinetic.txt\" title \"kinetic\" pt 9, \"./test/total_energy.txt\" title \"total\" pt 11\n");
     fflush(gp);
 	
@@ -72,44 +121,27 @@ void gnuplot() {
 	pclose(gp);
 }
 
-double culcU(double x_a, double x_b, double x_c) {
-    return 0.5 * k * ((x_a - L) * (x_a - L)) + 0.5 * k * ((x_b - x_a - L) * (x_b - x_a - L)) + 0.5 * k * ((x_c - x_b - L) * (x_c - x_b - L)) + 0.5 * k * ((x_c - L * (w - 1)) * (x_c - L * (w - 1)));
-}
-double culcK(double v_a, double v_b, double v_c) {
-    return 0.5 * m * (v_a * v_a + v_b * v_b + v_c * v_c);
-}
-
 int main() {
     std::ofstream potential("test/potential.txt");
     std::ofstream kinetic("test/kinetic.txt");
     std::ofstream total("test/total_energy.txt");
 
-    double v_a = v_a0;
-    double v_b = v_b0;
-    double v_c = v_c0;
-    double x_a = x_a0;
-    double x_b = x_b0;
-    double x_c = x_c0;
+    const std::vector<double> xs = {x_a0, x_b0, x_c0};
+    const std::vector<double> vs = {v_a0, v_b0, v_c0};
+    std::vector<std::vector<double>> d = {vs, xs};
     double t = t_min;
 
     int N = (t_max - t_min) / dt + 1; // iもintなので同じ型にしておく
     for(int i = 0; i < N; i++) {
-        const double U = culcU(x_a, x_b, x_c);
-        const double K = culcK(v_a, v_b, v_c);
+        const double U = culcU(d[1]);
+        const double K = culcK(d[0]);
         potential << t << "\t" << U << "\n";
         kinetic << t << "\t" << K << "\n";
         total << t << "\t" << K + U << "\n";
 
         // 値の更新
         t += dt;
-        const std::vector<double> xs = {x_a, x_b, x_c};
-        const std::vector<double> vs = {v_a, v_b, v_c};
-        x_a = nextX(v_a, x_a, xs, f_A);
-        x_b = nextX(v_b, x_b, xs, f_B);
-        x_c = nextX(v_c, x_c, xs, f_C);
-        v_a = nextV(v_a, vs, xs, f_A);
-        v_b = nextV(v_b, vs, xs, f_B);
-        v_c = nextV(v_c, vs, xs, f_C);
+        d = update(d);
     }
     potential.close();
     kinetic.close();
