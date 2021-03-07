@@ -3,7 +3,6 @@
 #include <cmath>
 #define GNUPLOT_PATH "gnuplot"
 #include <vector>
-#include <typeinfo>
 
 
 // 定数
