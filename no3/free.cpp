@@ -6,6 +6,12 @@
 #include <vector>
 
 constexpr int N = 256;
+constexpr int M = 1000; //step数
+constexpr double dt = 0.0050;
+constexpr double m = 1.0;
+constexpr double sigma = 1.0;
+constexpr double yps = 1.0;
+constexpr double dt = 0.0050;
 constexpr double a = 0.00001;
 constexpr int rand_min = 100;
 constexpr int rand_max = -100;
@@ -40,13 +46,7 @@ void gnuplot() {
     fprintf(gp, "set xlabel \"x\"\n");
     fprintf(gp, "set ylabel \"y\"\n");
     fprintf(gp, "set zlabel \"z\"\n");
-    // fprintf(gp, "set lmargin 10\n");
-    // fprintf(gp, "set bmargin 4\n");
-    // fprintf(gp, "set xlabel font 'Arial,13'\n");
-    // fprintf(gp, "set ylabel font 'Arial,13'\n");
     fprintf(gp, "set pointsize 0.5\n");
-    // fprintf(gp, "set yrange [0:0.6]\n");
-    // fileの読み込みが最後じゃないとうまくいかなかったのなんでだろう。比較的重めのIOなので、それが間接的な原因になってる気がする。コルーチン化したら直る気がするけどめんどいのでこれでいいや。
     fprintf(gp, "sp \"./test/no3-initial-loc.txt\" title \"location\" pt 7\n");
     fflush(gp);
 	
@@ -119,10 +119,49 @@ std::vector<std::vector<std::vector<double>>> config() {
     std::vector<std::vector<double>> initial_v = randomizedV();
     return zip(initial_loc, initial_v);
 }
+double updateK(std::vector<std::vector<std::vector<double>>> data) {
+    double k = 0.0;
+    for(int i = 0; i < N; i++) {
+        const double v = data[i][1];
+        k += 0.5 * m * (v[0] * v[0] + v[1] * v[1] + v[2] * v[2]);
+    }
+
+    return k;
+}
+double updateU(std::vector<std::vector<std::vector<double>>> data) {
+    double p = 0.0;
+    for(int i = 0; i < N; i++) {
+        const std::vector<double> r_i = data[i][0];
+       for(int j = 0; j < i; j++) {
+           const std::vector<double> r_j = data[j][0];
+           const double sq_r = (r_j[0] - r_i[0]) * (r_j[0] - r_i[0]) + (r_j[1] - r_i[1]) * (r_j[1] - r_i[1]) + (r_j[2] - r_i[2]) * (r_j[2] - r_i[2]);
+           p += 4 * yps * (std::pow((sigma * sigma) / sq_r, 6) - std::pow((sigma * sigma) / sq_r, 3));
+       }
+    }
+
+    return p;
+}
 
 int main() {
-    const std::vector<std::vector<std::vector<double>>> ini = config();
-    std::cout << ini.size() << std::endl;
-    testPlot(ini);
-    gnuplot();
+    const std::vector<std::vector<std::vector<double>>> m_data = config();
+    // testPlot(ini);
+    std::ofstream kinetic("test/no3-free-kinetic.txt");
+    std::ofstream potential("test/no3-free-potential.txt");
+    std::ofstream energy("test/no3-free-energy.txt");
+    
+    double k = 0.0;
+    double p = 0.0;
+    double t = 0.0;
+    for(int i = 0; i < M; i++) {
+        kinetic = updateK(m_data);
+        potential = updateU(m_data);
+        m_data = updateMData(m_data);
+        kinetic << t << "\t" << k << "\n";
+        potential << t << "\t" << p << "\n";
+        energy << t << "\t" << k + p << "\n";
+        t += dt;
+    }
+    kinetic.close();
+    potential.close();
+    energy.close();
 }
