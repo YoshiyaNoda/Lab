@@ -1,3 +1,4 @@
+// https://www.fml.t.u-tokyo.ac.jp/~izumi/CMS/MD/models.pdf を参考にした
 #include <iostream>
 #include <fstream>
 #include <cmath>
@@ -11,8 +12,7 @@ constexpr double dt = 0.0050;
 constexpr double m = 1.0;
 constexpr double sigma = 1.0;
 constexpr double yps = 1.0;
-constexpr double dt = 0.0050;
-constexpr double a = 0.00001;
+constexpr double a = 10.0;
 constexpr int rand_min = 100;
 constexpr int rand_max = -100;
 
@@ -122,7 +122,7 @@ std::vector<std::vector<std::vector<double>>> config() {
 double updateK(std::vector<std::vector<std::vector<double>>> data) {
     double k = 0.0;
     for(int i = 0; i < N; i++) {
-        const double v = data[i][1];
+        const std::vector<double> v = data[i][1];
         k += 0.5 * m * (v[0] * v[0] + v[1] * v[1] + v[2] * v[2]);
     }
 
@@ -141,9 +141,51 @@ double updateU(std::vector<std::vector<std::vector<double>>> data) {
 
     return p;
 }
+std::vector<double> culcF(std::vector<double> r_i, std::vector<std::vector<std::vector<double>>> erased) {
+    std::vector<double> f = {0.0, 0.0, 0.0};
+    const int size = erased.size();
+    for(int j = 0; j < size; j++) {
+        const std::vector<double> r_j = erased[j][0];
+        const double sq_r = (r_j[0] - r_i[0]) * (r_j[0] - r_i[0]) + (r_j[1] - r_i[1]) * (r_j[1] - r_i[1]) + (r_j[2] - r_i[2]) * (r_j[2] - r_i[2]);
+        f[0] += 24 * yps * (std::pow((sigma * sigma) / sq_r, 6) - std::pow((sigma * sigma) / sq_r, 3)) / sq_r * (r_j[0] - r_i[0]);
+        f[1] += 24 * yps * (std::pow((sigma * sigma) / sq_r, 6) - std::pow((sigma * sigma) / sq_r, 3)) / sq_r * (r_j[1] - r_i[1]);
+        f[2] += 24 * yps * (std::pow((sigma * sigma) / sq_r, 6) - std::pow((sigma * sigma) / sq_r, 3)) / sq_r * (r_j[2] - r_i[2]);
+    }
+    return f;
+}
+std::vector<double> culcH(std::vector<double> v_i, std::vector<double> f_i) {
+    std::vector<double> h = {0.0, 0.0, 0.0};
+    h[0] = v_i[0] + (1.0 / (2.0 * m)) * dt * f_i[0];
+    h[1] = v_i[1] + (1.0 / (2.0 * m)) * dt * f_i[1];
+    h[2] = v_i[2] + (1.0 / (2.0 * m)) * dt * f_i[2];
+    return h;
+}
+std::vector<std::vector<std::vector<double>>> updateMData(std::vector<std::vector<std::vector<double>>> data) {
+    std::vector<std::vector<std::vector<double>>> res = data;
+    std::vector<double> h {0.0, 0.0, 0.0}; // 中間速度
+    for(int i = 0; i < N; i++) {
+        const std::vector<double> r_i = data[i][0];
+        const std::vector<double> v_i = data[i][1];
+        std::vector<std::vector<std::vector<double>>> erased = data;
+        erased.erase(erased.begin() + i);
+        const std::vector<double> f_i = culcF(r_i, erased);
+        h = culcH(v_i, f_i);
+        // 座標更新
+        res[i][0] = {r_i[0] + dt * h[0], r_i[1] + dt * h[1], r_i[2] + dt * h[2]};
+    }
+    for(int i = 0; i < N; i++) {
+        const std::vector<double> r_i_next = res[i][0];
+        std::vector<std::vector<std::vector<double>>> erased_next = res;
+        erased_next.erase(erased_next.begin() + i);
+        const std::vector<double> f_i_next = culcF(r_i_next, erased_next);
+        // 速度更新
+        res[i][1] = {h[0] + (1.0 / (2.0 * m)) * dt * f_i_next[0], h[1] + (1.0 / (2.0 * m)) * dt * f_i_next[1], h[2] + (1.0 / (2.0 * m)) * dt * f_i_next[2]};
+    }
+    return res;
+}
 
 int main() {
-    const std::vector<std::vector<std::vector<double>>> m_data = config();
+    std::vector<std::vector<std::vector<double>>> m_data = config();
     // testPlot(ini);
     std::ofstream kinetic("test/no3-free-kinetic.txt");
     std::ofstream potential("test/no3-free-potential.txt");
@@ -152,15 +194,18 @@ int main() {
     double k = 0.0;
     double p = 0.0;
     double t = 0.0;
-    for(int i = 0; i < M; i++) {
-        kinetic = updateK(m_data);
-        potential = updateU(m_data);
+    for(int i = 0; i < 5; i++) {
+        k = updateK(m_data);
+        p = updateU(m_data);
         m_data = updateMData(m_data);
+        std::cout << k + p << "\t" << p << "\t" << k << std::endl;
         kinetic << t << "\t" << k << "\n";
         potential << t << "\t" << p << "\n";
         energy << t << "\t" << k + p << "\n";
         t += dt;
     }
+    testPlot(m_data);
+    gnuplot();
     kinetic.close();
     potential.close();
     energy.close();
